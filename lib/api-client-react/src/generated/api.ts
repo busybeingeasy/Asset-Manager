@@ -26,6 +26,8 @@ import type {
   NewsArticle,
   NewsStats,
   ScheduleStatus,
+  SheetsExportResult,
+  SheetsStatus,
   TariffInfo
 } from './api.schemas';
 
@@ -426,6 +428,153 @@ export function useGetTariffs<TData = Awaited<ReturnType<typeof getTariffs>>, TE
 
 
 
+
+export const getGetSheetsStatusUrl = () => {
+
+
+
+
+  return `/api/sheets/status`
+}
+
+/**
+ * @summary Get Google Sheets connection status
+ */
+export const getSheetsStatus = async ( options?: RequestInit): Promise<SheetsStatus> => {
+
+  return customFetch<SheetsStatus>(getGetSheetsStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSheetsStatusQueryKey = () => {
+    return [
+    `/api/sheets/status`
+    ] as const;
+    }
+
+
+export const getGetSheetsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getSheetsStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSheetsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSheetsStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSheetsStatus>>> = ({ signal }) => getSheetsStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSheetsStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSheetsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getSheetsStatus>>>
+export type GetSheetsStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get Google Sheets connection status
+ */
+
+export function useGetSheetsStatus<TData = Awaited<ReturnType<typeof getSheetsStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSheetsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSheetsStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getExportToSheetsUrl = () => {
+
+
+
+
+  return `/api/sheets/export`
+}
+
+/**
+ * @summary Manually export news articles to Google Sheets
+ */
+export const exportToSheets = async ( options?: RequestInit): Promise<SheetsExportResult> => {
+
+  return customFetch<SheetsExportResult>(getExportToSheetsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getExportToSheetsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportToSheets>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof exportToSheets>>, TError,void, TContext> => {
+
+const mutationKey = ['exportToSheets'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exportToSheets>>, void> = () => {
+
+
+          return  exportToSheets(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ExportToSheetsMutationResult = NonNullable<Awaited<ReturnType<typeof exportToSheets>>>
+
+    export type ExportToSheetsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Manually export news articles to Google Sheets
+ */
+export const useExportToSheets = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exportToSheets>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof exportToSheets>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getExportToSheetsMutationOptions(options));
+    }
 
 export const getGetScheduleStatusUrl = () => {
 

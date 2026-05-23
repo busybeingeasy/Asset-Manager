@@ -6,14 +6,17 @@ import {
   useTriggerCrawl, 
   useGetScheduleStatus,
   useToggleSchedule,
+  useGetSheetsStatus,
+  useExportToSheets,
   getGetNewsQueryKey, 
   getGetNewsStatsQueryKey,
   getGetScheduleStatusQueryKey,
+  getGetSheetsStatusQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow, formatDistance } from "date-fns";
 import { ko } from "date-fns/locale";
-import { RefreshCw, Search, ExternalLink, Calendar, Filter, FileText, Globe, Layers, AlertTriangle, Clock, Bell, BellOff } from "lucide-react";
+import { RefreshCw, Search, ExternalLink, Calendar, Filter, FileText, Globe, Layers, AlertTriangle, Clock, Bell, BellOff, Sheet, CheckCircle2, XCircle, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
@@ -73,8 +76,12 @@ export default function Dashboard() {
     query: { queryKey: getGetScheduleStatusQueryKey(), refetchInterval: 30000 }
   });
 
-  const toggleSchedule = useToggleSchedule();
+  const { data: sheetsStatus, refetch: refetchSheetsStatus } = useGetSheetsStatus({
+    query: { queryKey: getGetSheetsStatusQueryKey(), refetchInterval: 60000 }
+  });
 
+  const toggleSchedule = useToggleSchedule();
+  const exportToSheets = useExportToSheets();
   const triggerCrawl = useTriggerCrawl();
 
   const handleToggleSchedule = () => {
@@ -84,6 +91,20 @@ export default function Dashboard() {
         toast.success(data.enabled ? "자동 크롤링이 활성화되었습니다" : "자동 크롤링이 비활성화되었습니다");
       },
       onError: () => toast.error("스케줄 변경 중 오류가 발생했습니다"),
+    });
+  };
+
+  const handleExportToSheets = () => {
+    exportToSheets.mutate(undefined, {
+      onSuccess: (result) => {
+        refetchSheetsStatus();
+        if (result.success) {
+          toast.success(`Google Sheets 내보내기 완료: ${result.newRows}개 새 행, ${result.skippedDuplicates}개 중복 건너뜀`);
+        } else {
+          toast.error(`내보내기 실패: ${result.error ?? result.message}`);
+        }
+      },
+      onError: () => toast.error("Google Sheets 내보내기 중 오류가 발생했습니다"),
     });
   };
 
@@ -133,6 +154,16 @@ export default function Dashboard() {
               {stats?.lastCrawled ? format(new Date(stats.lastCrawled), "yyyy-MM-dd HH:mm:ss") : "-"}
             </div>
           </div>
+          <Button
+            onClick={handleExportToSheets}
+            disabled={exportToSheets.isPending || !sheetsStatus?.connected}
+            variant="outline"
+            className="border-border hover:bg-card font-medium"
+            title={sheetsStatus?.connected ? "Google Sheets로 내보내기" : "Google Sheets 미연결"}
+          >
+            <Upload className={`w-4 h-4 mr-2 ${exportToSheets.isPending ? "animate-bounce" : ""}`} />
+            Sheets 내보내기
+          </Button>
           <Button 
             onClick={handleCrawl} 
             disabled={triggerCrawl.isPending}
@@ -370,6 +401,75 @@ export default function Dashboard() {
                     <span className="ml-1 opacity-60">(SLACK_WEBHOOK_URL)</span>
                   </span>
                 </>
+              )}
+            </div>
+          </div>
+
+          {/* Google Sheets Panel */}
+          <div className="flex-none border-b border-border">
+            <div className="p-4 bg-card/50">
+              <h2 className="font-semibold flex items-center gap-2 mb-3">
+                <Sheet className="w-4 h-4 text-primary" />
+                Google Sheets 연동
+              </h2>
+
+              <div className="flex items-center gap-2 mb-3">
+                {sheetsStatus?.connected ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-green-400 flex-none" />
+                    <span className="text-sm text-green-400 font-medium">연결됨</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-muted-foreground flex-none" />
+                    <span className="text-sm text-muted-foreground">미연결</span>
+                  </>
+                )}
+              </div>
+
+              {sheetsStatus?.connected ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-background rounded p-2 border border-border/50">
+                      <div className="text-muted-foreground mb-0.5">총 행 수</div>
+                      <div className="text-white font-mono font-semibold">
+                        {sheetsStatus.totalRows?.toLocaleString() ?? "-"}
+                      </div>
+                    </div>
+                    <div className="bg-background rounded p-2 border border-border/50">
+                      <div className="text-muted-foreground mb-0.5">마지막 내보내기</div>
+                      <div className="text-white font-mono">
+                        {sheetsStatus.lastExportCount != null ? `+${sheetsStatus.lastExportCount}행` : "-"}
+                      </div>
+                    </div>
+                  </div>
+                  {sheetsStatus.lastExportAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(sheetsStatus.lastExportAt), { locale: ko, addSuffix: true })}
+                    </p>
+                  )}
+                  <Button
+                    size="sm"
+                    className="w-full h-8 text-xs"
+                    onClick={handleExportToSheets}
+                    disabled={exportToSheets.isPending}
+                  >
+                    <Upload className={`w-3.5 h-3.5 mr-1.5 ${exportToSheets.isPending ? "animate-bounce" : ""}`} />
+                    {exportToSheets.isPending ? "내보내는 중..." : "지금 내보내기"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground space-y-1.5">
+                  <p>연결하려면 환경 변수를 설정하세요:</p>
+                  <div className="bg-background rounded p-2 border border-border/50 font-mono space-y-1 leading-relaxed">
+                    <div className="text-orange-400/80">GOOGLE_SERVICE_ACCOUNT_EMAIL</div>
+                    <div className="text-orange-400/80">GOOGLE_PRIVATE_KEY</div>
+                    <div className="text-orange-400/80">GOOGLE_SHEET_ID</div>
+                  </div>
+                  {sheetsStatus?.error && (
+                    <p className="text-red-400/70 text-[10px] leading-relaxed">{sheetsStatus.error}</p>
+                  )}
+                </div>
               )}
             </div>
           </div>

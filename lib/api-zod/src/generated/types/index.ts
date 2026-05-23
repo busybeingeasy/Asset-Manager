@@ -14,5 +14,7 @@ export * from './newsStats';
 export * from './newsStatsByCategory';
 export * from './newsStatsSources';
 export * from './scheduleStatus';
+export * from './sheetsExportResult';
+export * from './sheetsStatus';
 export * from './tariffInfo';
 export * from './tariffItem';

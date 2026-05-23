@@ -1,6 +1,7 @@
 import schedule from "node-schedule";
 import axios from "axios";
 import { crawlAllNews, readNews, type NewsArticle } from "./crawler";
+import { exportToGoogleSheets } from "./sheets";
 import { logger } from "./logger";
 
 const INTERVAL_HOURS = 6;
@@ -112,9 +113,10 @@ async function runScheduledCrawl(): Promise<void> {
 
     logger.info({ total: articles.length, new: newArticles.length }, "Scheduled crawl done");
 
-    if (newArticles.length > 0) {
-      await sendSlackNotification(newArticles.length > 0 ? articles : []);
-    }
+    await Promise.all([
+      newArticles.length > 0 ? sendSlackNotification(articles) : Promise.resolve(),
+      exportToGoogleSheets(articles),
+    ]);
   } catch (err) {
     logger.error({ err }, "Scheduled crawl failed");
   }

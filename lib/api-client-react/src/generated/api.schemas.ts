@@ -58,6 +58,31 @@ export interface TariffInfo {
   items: TariffItem[];
 }
 
+export interface SheetsStatus {
+  connected: boolean;
+  /** @nullable */
+  sheetId: string | null;
+  /** @nullable */
+  lastExportAt: string | null;
+  /** @nullable */
+  lastExportCount: number | null;
+  /** @nullable */
+  totalRows: number | null;
+  /** @nullable */
+  error: string | null;
+}
+
+export interface SheetsExportResult {
+  success: boolean;
+  newRows: number;
+  skippedDuplicates: number;
+  totalRows: number;
+  exportedAt: string;
+  message: string;
+  /** @nullable */
+  error: string | null;
+}
+
 export interface ScheduleStatus {
   enabled: boolean;
   intervalHours: number;

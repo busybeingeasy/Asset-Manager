@@ -81,6 +81,33 @@ export const GetTariffsResponse = zod.object({
 
 
 /**
+ * @summary Get Google Sheets connection status
+ */
+export const GetSheetsStatusResponse = zod.object({
+  "connected": zod.boolean(),
+  "sheetId": zod.string().nullable(),
+  "lastExportAt": zod.string().nullable(),
+  "lastExportCount": zod.number().nullable(),
+  "totalRows": zod.number().nullable(),
+  "error": zod.string().nullable()
+})
+
+
+/**
+ * @summary Manually export news articles to Google Sheets
+ */
+export const ExportToSheetsResponse = zod.object({
+  "success": zod.boolean(),
+  "newRows": zod.number(),
+  "skippedDuplicates": zod.number(),
+  "totalRows": zod.number(),
+  "exportedAt": zod.string(),
+  "message": zod.string(),
+  "error": zod.string().nullable()
+})
+
+
+/**
  * @summary Get auto-crawl schedule status
  */
 export const GetScheduleStatusResponse = zod.object({

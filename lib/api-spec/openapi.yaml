@@ -96,6 +96,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/TariffInfo"
 
+  /sheets/status:
+    get:
+      operationId: getSheetsStatus
+      tags: [sheets]
+      summary: Get Google Sheets connection status
+      responses:
+        "200":
+          description: Sheets status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SheetsStatus"
+
+  /sheets/export:
+    post:
+      operationId: exportToSheets
+      tags: [sheets]
+      summary: Manually export news articles to Google Sheets
+      responses:
+        "200":
+          description: Export result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SheetsExportResult"
+
   /schedule:
     get:
       operationId: getScheduleStatus
@@ -244,6 +270,55 @@ components:
         - keywords
         - description
         - timestamp
+
+    SheetsStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        sheetId:
+          type: ["string", "null"]
+        lastExportAt:
+          type: ["string", "null"]
+        lastExportCount:
+          type: ["integer", "null"]
+        totalRows:
+          type: ["integer", "null"]
+        error:
+          type: ["string", "null"]
+      required:
+        - connected
+        - sheetId
+        - lastExportAt
+        - lastExportCount
+        - totalRows
+        - error
+
+    SheetsExportResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        newRows:
+          type: integer
+        skippedDuplicates:
+          type: integer
+        totalRows:
+          type: integer
+        exportedAt:
+          type: string
+        message:
+          type: string
+        error:
+          type: ["string", "null"]
+      required:
+        - success
+        - newRows
+        - skippedDuplicates
+        - totalRows
+        - exportedAt
+        - message
+        - error
 
     ScheduleStatus:
       type: object
