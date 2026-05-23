@@ -96,6 +96,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/TariffInfo"
 
+  /schedule:
+    get:
+      operationId: getScheduleStatus
+      tags: [crawl]
+      summary: Get auto-crawl schedule status
+      responses:
+        "200":
+          description: Schedule status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleStatus"
+    post:
+      operationId: toggleSchedule
+      tags: [crawl]
+      summary: Toggle auto-crawl schedule on or off
+      responses:
+        "200":
+          description: Updated schedule status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleStatus"
+
 components:
   schemas:
     HealthStatus:
@@ -220,3 +244,28 @@ components:
         - keywords
         - description
         - timestamp
+
+    ScheduleStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        intervalHours:
+          type: integer
+        nextRun:
+          type: ["string", "null"]
+        lastRun:
+          type: ["string", "null"]
+        alertKeywords:
+          type: array
+          items:
+            type: string
+        slackEnabled:
+          type: boolean
+      required:
+        - enabled
+        - intervalHours
+        - nextRun
+        - lastRun
+        - alertKeywords
+        - slackEnabled

@@ -25,6 +25,7 @@ import type {
   HealthStatus,
   NewsArticle,
   NewsStats,
+  ScheduleStatus,
   TariffInfo
 } from './api.schemas';
 
@@ -425,4 +426,151 @@ export function useGetTariffs<TData = Awaited<ReturnType<typeof getTariffs>>, TE
 
 
 
+
+export const getGetScheduleStatusUrl = () => {
+
+
+
+
+  return `/api/schedule`
+}
+
+/**
+ * @summary Get auto-crawl schedule status
+ */
+export const getScheduleStatus = async ( options?: RequestInit): Promise<ScheduleStatus> => {
+
+  return customFetch<ScheduleStatus>(getGetScheduleStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetScheduleStatusQueryKey = () => {
+    return [
+    `/api/schedule`
+    ] as const;
+    }
+
+
+export const getGetScheduleStatusQueryOptions = <TData = Awaited<ReturnType<typeof getScheduleStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheduleStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetScheduleStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getScheduleStatus>>> = ({ signal }) => getScheduleStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getScheduleStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetScheduleStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getScheduleStatus>>>
+export type GetScheduleStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get auto-crawl schedule status
+ */
+
+export function useGetScheduleStatus<TData = Awaited<ReturnType<typeof getScheduleStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getScheduleStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetScheduleStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getToggleScheduleUrl = () => {
+
+
+
+
+  return `/api/schedule`
+}
+
+/**
+ * @summary Toggle auto-crawl schedule on or off
+ */
+export const toggleSchedule = async ( options?: RequestInit): Promise<ScheduleStatus> => {
+
+  return customFetch<ScheduleStatus>(getToggleScheduleUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getToggleScheduleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleSchedule>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof toggleSchedule>>, TError,void, TContext> => {
+
+const mutationKey = ['toggleSchedule'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof toggleSchedule>>, void> = () => {
+
+
+          return  toggleSchedule(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ToggleScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof toggleSchedule>>>
+
+    export type ToggleScheduleMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle auto-crawl schedule on or off
+ */
+export const useToggleSchedule = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof toggleSchedule>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof toggleSchedule>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getToggleScheduleMutationOptions(options));
+    }
 

@@ -13,5 +13,6 @@ export * from './newsArticle';
 export * from './newsStats';
 export * from './newsStatsByCategory';
 export * from './newsStatsSources';
+export * from './scheduleStatus';
 export * from './tariffInfo';
 export * from './tariffItem';

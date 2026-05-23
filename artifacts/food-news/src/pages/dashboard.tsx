@@ -4,13 +4,16 @@ import {
   useGetNewsStats, 
   useGetTariffs, 
   useTriggerCrawl, 
+  useGetScheduleStatus,
+  useToggleSchedule,
   getGetNewsQueryKey, 
-  getGetNewsStatsQueryKey 
+  getGetNewsStatsQueryKey,
+  getGetScheduleStatusQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, formatDistance } from "date-fns";
 import { ko } from "date-fns/locale";
-import { RefreshCw, Search, ExternalLink, Calendar, Filter, FileText, Globe, Layers, AlertTriangle } from "lucide-react";
+import { RefreshCw, Search, ExternalLink, Calendar, Filter, FileText, Globe, Layers, AlertTriangle, Clock, Bell, BellOff } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
@@ -66,7 +69,23 @@ export default function Dashboard() {
 
   const { data: tariffs } = useGetTariffs();
 
+  const { data: scheduleStatus, refetch: refetchSchedule } = useGetScheduleStatus({
+    query: { queryKey: getGetScheduleStatusQueryKey(), refetchInterval: 30000 }
+  });
+
+  const toggleSchedule = useToggleSchedule();
+
   const triggerCrawl = useTriggerCrawl();
+
+  const handleToggleSchedule = () => {
+    toggleSchedule.mutate(undefined, {
+      onSuccess: (data) => {
+        refetchSchedule();
+        toast.success(data.enabled ? "자동 크롤링이 활성화되었습니다" : "자동 크롤링이 비활성화되었습니다");
+      },
+      onError: () => toast.error("스케줄 변경 중 오류가 발생했습니다"),
+    });
+  };
 
   const handleCrawl = () => {
     triggerCrawl.mutate(undefined, {
@@ -284,9 +303,79 @@ export default function Dashboard() {
           </ScrollArea>
         </div>
 
-        {/* Right Sidebar - Tariffs */}
+        {/* Right Sidebar */}
         <div className="w-80 flex-none bg-card/30 flex flex-col border-l border-border">
-          <div className="p-5 border-b border-border bg-card/50">
+
+          {/* Schedule Panel */}
+          <div className="flex-none border-b border-border">
+            <div className="p-4 bg-card/50">
+              <h2 className="font-semibold flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-primary" />
+                자동 크롤링
+              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${scheduleStatus?.enabled ? "bg-green-500 animate-pulse" : "bg-muted-foreground"}`} />
+                    <span className="text-sm font-medium">
+                      {scheduleStatus?.enabled ? "활성화" : "비활성화"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {scheduleStatus?.intervalHours}시간마다 자동 수집
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant={scheduleStatus?.enabled ? "destructive" : "default"}
+                  onClick={handleToggleSchedule}
+                  disabled={toggleSchedule.isPending}
+                  className="h-8 text-xs"
+                >
+                  {scheduleStatus?.enabled ? "중지" : "시작"}
+                </Button>
+              </div>
+
+              {scheduleStatus?.enabled && scheduleStatus.nextRun && (
+                <div className="text-xs bg-background rounded p-2 border border-border/50">
+                  <span className="text-muted-foreground">다음 크롤링: </span>
+                  <span className="text-white/80 font-mono">
+                    {format(new Date(scheduleStatus.nextRun), "HH:mm")}
+                    <span className="text-muted-foreground ml-1">
+                      ({formatDistance(new Date(scheduleStatus.nextRun), new Date(), { locale: ko, addSuffix: true })})
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              {scheduleStatus?.lastRun && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  마지막 자동 수집: {formatDistanceToNow(new Date(scheduleStatus.lastRun), { locale: ko, addSuffix: true })}
+                </p>
+              )}
+            </div>
+
+            {/* Slack Status */}
+            <div className="px-4 pb-3 flex items-center gap-2">
+              {scheduleStatus?.slackEnabled ? (
+                <>
+                  <Bell className="w-3.5 h-3.5 text-green-400" />
+                  <span className="text-xs text-green-400">Slack 알림 활성화됨</span>
+                </>
+              ) : (
+                <>
+                  <BellOff className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    Slack 알림 미설정
+                    <span className="ml-1 opacity-60">(SLACK_WEBHOOK_URL)</span>
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Tariffs */}
+          <div className="p-4 border-b border-border bg-card/50">
             <h2 className="font-semibold flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" />
               글로벌 관세/통상 정보
@@ -330,7 +419,7 @@ export default function Dashboard() {
           {tariffs?.source && (
             <div className="p-4 border-t border-border bg-card/50 text-center">
               <a 
-                href={tariffs.source} 
+                href="https://www.mafra.go.kr"
                 target="_blank" 
                 rel="noreferrer"
                 className="text-xs text-muted-foreground hover:text-white inline-flex items-center gap-1"

@@ -80,3 +80,29 @@ export const GetTariffsResponse = zod.object({
 })
 
 
+/**
+ * @summary Get auto-crawl schedule status
+ */
+export const GetScheduleStatusResponse = zod.object({
+  "enabled": zod.boolean(),
+  "intervalHours": zod.number(),
+  "nextRun": zod.string().nullable(),
+  "lastRun": zod.string().nullable(),
+  "alertKeywords": zod.array(zod.string()),
+  "slackEnabled": zod.boolean()
+})
+
+
+/**
+ * @summary Toggle auto-crawl schedule on or off
+ */
+export const ToggleScheduleResponse = zod.object({
+  "enabled": zod.boolean(),
+  "intervalHours": zod.number(),
+  "nextRun": zod.string().nullable(),
+  "lastRun": zod.string().nullable(),
+  "alertKeywords": zod.array(zod.string()),
+  "slackEnabled": zod.boolean()
+})
+
+

@@ -58,6 +58,17 @@ export interface TariffInfo {
   items: TariffItem[];
 }
 
+export interface ScheduleStatus {
+  enabled: boolean;
+  intervalHours: number;
+  /** @nullable */
+  nextRun: string | null;
+  /** @nullable */
+  lastRun: string | null;
+  alertKeywords: string[];
+  slackEnabled: boolean;
+}
+
 export type GetNewsParams = {
 category?: string;
 keyword?: string;
