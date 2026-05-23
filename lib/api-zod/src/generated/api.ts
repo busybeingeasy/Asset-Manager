@@ -81,6 +81,53 @@ export const GetTariffsResponse = zod.object({
 
 
 /**
+ * @summary Get keyword alert configuration
+ */
+export const GetKeywordConfigResponse = zod.object({
+  "high": zod.array(zod.object({
+  "id": zod.string(),
+  "value": zod.string(),
+  "enabled": zod.boolean()
+})),
+  "medium": zod.array(zod.object({
+  "id": zod.string(),
+  "value": zod.string(),
+  "enabled": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Save keyword alert configuration
+ */
+export const SaveKeywordConfigBody = zod.object({
+  "high": zod.array(zod.object({
+  "id": zod.string(),
+  "value": zod.string(),
+  "enabled": zod.boolean()
+})),
+  "medium": zod.array(zod.object({
+  "id": zod.string(),
+  "value": zod.string(),
+  "enabled": zod.boolean()
+}))
+})
+
+export const SaveKeywordConfigResponse = zod.object({
+  "high": zod.array(zod.object({
+  "id": zod.string(),
+  "value": zod.string(),
+  "enabled": zod.boolean()
+})),
+  "medium": zod.array(zod.object({
+  "id": zod.string(),
+  "value": zod.string(),
+  "enabled": zod.boolean()
+}))
+})
+
+
+/**
  * @summary Get Google Sheets connection status
  */
 export const GetSheetsStatusResponse = zod.object({

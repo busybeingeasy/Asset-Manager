@@ -96,6 +96,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/TariffInfo"
 
+  /keywords:
+    get:
+      operationId: getKeywordConfig
+      tags: [keywords]
+      summary: Get keyword alert configuration
+      responses:
+        "200":
+          description: Keyword configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeywordConfig"
+    put:
+      operationId: saveKeywordConfig
+      tags: [keywords]
+      summary: Save keyword alert configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeywordConfig"
+      responses:
+        "200":
+          description: Updated keyword configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeywordConfig"
+
   /sheets/status:
     get:
       operationId: getSheetsStatus
@@ -270,6 +300,35 @@ components:
         - keywords
         - description
         - timestamp
+
+    KeywordEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        value:
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - id
+        - value
+        - enabled
+
+    KeywordConfig:
+      type: object
+      properties:
+        high:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeywordEntry"
+        medium:
+          type: array
+          items:
+            $ref: "#/components/schemas/KeywordEntry"
+      required:
+        - high
+        - medium
 
     SheetsStatus:
       type: object

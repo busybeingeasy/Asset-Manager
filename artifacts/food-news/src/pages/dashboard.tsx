@@ -8,6 +8,7 @@ import {
   useToggleSchedule,
   useGetSheetsStatus,
   useExportToSheets,
+  useGetKeywordConfig,
   getGetNewsQueryKey, 
   getGetNewsStatsQueryKey,
   getGetScheduleStatusQueryKey,
@@ -16,8 +17,9 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { format, formatDistanceToNow, formatDistance } from "date-fns";
 import { ko } from "date-fns/locale";
-import { RefreshCw, Search, ExternalLink, Calendar, Filter, FileText, Globe, Layers, AlertTriangle, Clock, Bell, BellOff, Sheet, CheckCircle2, XCircle, Upload } from "lucide-react";
+import { RefreshCw, Search, ExternalLink, Calendar, Filter, FileText, Globe, Layers, AlertTriangle, Clock, Bell, BellOff, Sheet, CheckCircle2, XCircle, Upload, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { KeywordSettingsModal } from "@/components/KeywordSettingsModal";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -83,6 +85,19 @@ export default function Dashboard() {
   const toggleSchedule = useToggleSchedule();
   const exportToSheets = useExportToSheets();
   const triggerCrawl = useTriggerCrawl();
+  const { data: keywordConfig } = useGetKeywordConfig();
+  const [keywordModalOpen, setKeywordModalOpen] = useState(false);
+
+  const getRiskLevel = useMemo(() => {
+    const high = (keywordConfig?.high ?? []).filter((e) => e.enabled).map((e) => e.value.toLowerCase());
+    const medium = (keywordConfig?.medium ?? []).filter((e) => e.enabled).map((e) => e.value.toLowerCase());
+    return (article: { title: string; description?: string | null; keywords: string[] }) => {
+      const text = (article.title + " " + (article.description ?? "") + " " + article.keywords.join(" ")).toLowerCase();
+      if (high.some((kw) => text.includes(kw))) return "HIGH";
+      if (medium.some((kw) => text.includes(kw))) return "MEDIUM";
+      return "LOW";
+    };
+  }, [keywordConfig]);
 
   const handleToggleSchedule = () => {
     toggleSchedule.mutate(undefined, {
@@ -164,6 +179,15 @@ export default function Dashboard() {
             <Upload className={`w-4 h-4 mr-2 ${exportToSheets.isPending ? "animate-bounce" : ""}`} />
             Sheets 내보내기
           </Button>
+          <Button
+            onClick={() => setKeywordModalOpen(true)}
+            variant="outline"
+            className="border-border hover:bg-card font-medium"
+            title="키워드 알림 설정"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            키워드 설정
+          </Button>
           <Button 
             onClick={handleCrawl} 
             disabled={triggerCrawl.isPending}
@@ -174,6 +198,7 @@ export default function Dashboard() {
           </Button>
         </div>
       </header>
+      <KeywordSettingsModal open={keywordModalOpen} onClose={() => setKeywordModalOpen(false)} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -303,6 +328,20 @@ export default function Dashboard() {
                           <Badge variant="outline" className="border-border/50 text-muted-foreground">
                             {article.category}
                           </Badge>
+                          {(() => {
+                            const risk = getRiskLevel(article);
+                            if (risk === "HIGH") return (
+                              <Badge className="bg-red-900/40 text-red-300 border border-red-800/50 hover:bg-red-900/40 font-semibold text-[10px]">
+                                ⚠ HIGH
+                              </Badge>
+                            );
+                            if (risk === "MEDIUM") return (
+                              <Badge className="bg-amber-900/40 text-amber-300 border border-amber-800/50 hover:bg-amber-900/40 font-semibold text-[10px]">
+                                ● MEDIUM
+                              </Badge>
+                            );
+                            return null;
+                          })()}
                           <span className="ml-auto text-xs text-muted-foreground font-mono">
                             {formatDate(article.pubDate)}
                           </span>

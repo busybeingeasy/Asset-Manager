@@ -2,15 +2,10 @@ import schedule from "node-schedule";
 import axios from "axios";
 import { crawlAllNews, readNews, type NewsArticle } from "./crawler";
 import { exportToGoogleSheets } from "./sheets";
+import { getAllEnabledKeywords } from "./keywords";
 import { logger } from "./logger";
 
 const INTERVAL_HOURS = 6;
-
-const ALERT_KEYWORDS = [
-  "할당관세", "수입금지", "검역", "리콜", "수출제한",
-  "tariff", "ban", "recall", "embargo", "shortage",
-  "농심", "오뚜기", "CJ", "삼양", "풀무원",
-];
 
 interface SchedulerState {
   enabled: boolean;
@@ -76,9 +71,12 @@ async function sendSlackNotification(articles: NewsArticle[]): Promise<void> {
   const matchedKeywords: string[] = [];
   const alertArticles: NewsArticle[] = [];
 
+  const { high, medium } = getAllEnabledKeywords();
+  const allAlertKws = [...high, ...medium];
+
   for (const article of articles) {
     const text = (article.title + " " + (article.description ?? "")).toLowerCase();
-    const matches = ALERT_KEYWORDS.filter((kw) => text.includes(kw.toLowerCase()));
+    const matches = allAlertKws.filter((kw) => text.includes(kw.toLowerCase()));
     if (matches.length > 0) {
       alertArticles.push(article);
       matchedKeywords.push(...matches);
@@ -163,7 +161,7 @@ export function getSchedulerStatus() {
     intervalHours: INTERVAL_HOURS,
     nextRun: state.nextRun?.toISOString() ?? null,
     lastRun: state.lastRun?.toISOString() ?? null,
-    alertKeywords: ALERT_KEYWORDS,
+    alertKeywords: (() => { const kw = getAllEnabledKeywords(); return [...kw.high, ...kw.medium]; })(),
     slackEnabled: !!process.env["SLACK_WEBHOOK_URL"],
   };
 }

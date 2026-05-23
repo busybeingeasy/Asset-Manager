@@ -58,6 +58,17 @@ export interface TariffInfo {
   items: TariffItem[];
 }
 
+export interface KeywordEntry {
+  id: string;
+  value: string;
+  enabled: boolean;
+}
+
+export interface KeywordConfig {
+  high: KeywordEntry[];
+  medium: KeywordEntry[];
+}
+
 export interface SheetsStatus {
   connected: boolean;
   /** @nullable */

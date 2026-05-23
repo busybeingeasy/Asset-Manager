@@ -23,6 +23,7 @@ import type {
   CrawlResult,
   GetNewsParams,
   HealthStatus,
+  KeywordConfig,
   NewsArticle,
   NewsStats,
   ScheduleStatus,
@@ -32,7 +33,7 @@ import type {
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -428,6 +429,154 @@ export function useGetTariffs<TData = Awaited<ReturnType<typeof getTariffs>>, TE
 
 
 
+
+export const getGetKeywordConfigUrl = () => {
+
+
+
+
+  return `/api/keywords`
+}
+
+/**
+ * @summary Get keyword alert configuration
+ */
+export const getKeywordConfig = async ( options?: RequestInit): Promise<KeywordConfig> => {
+
+  return customFetch<KeywordConfig>(getGetKeywordConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKeywordConfigQueryKey = () => {
+    return [
+    `/api/keywords`
+    ] as const;
+    }
+
+
+export const getGetKeywordConfigQueryOptions = <TData = Awaited<ReturnType<typeof getKeywordConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKeywordConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKeywordConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKeywordConfig>>> = ({ signal }) => getKeywordConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKeywordConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKeywordConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getKeywordConfig>>>
+export type GetKeywordConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get keyword alert configuration
+ */
+
+export function useGetKeywordConfig<TData = Awaited<ReturnType<typeof getKeywordConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKeywordConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKeywordConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveKeywordConfigUrl = () => {
+
+
+
+
+  return `/api/keywords`
+}
+
+/**
+ * @summary Save keyword alert configuration
+ */
+export const saveKeywordConfig = async (keywordConfig: KeywordConfig, options?: RequestInit): Promise<KeywordConfig> => {
+
+  return customFetch<KeywordConfig>(getSaveKeywordConfigUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      keywordConfig,)
+  }
+);}
+
+
+
+
+export const getSaveKeywordConfigMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKeywordConfig>>, TError,{data: BodyType<KeywordConfig>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveKeywordConfig>>, TError,{data: BodyType<KeywordConfig>}, TContext> => {
+
+const mutationKey = ['saveKeywordConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveKeywordConfig>>, {data: BodyType<KeywordConfig>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveKeywordConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveKeywordConfigMutationResult = NonNullable<Awaited<ReturnType<typeof saveKeywordConfig>>>
+    export type SaveKeywordConfigMutationBody = BodyType<KeywordConfig>
+    export type SaveKeywordConfigMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save keyword alert configuration
+ */
+export const useSaveKeywordConfig = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKeywordConfig>>, TError,{data: BodyType<KeywordConfig>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveKeywordConfig>>,
+        TError,
+        {data: BodyType<KeywordConfig>},
+        TContext
+      > => {
+      return useMutation(getSaveKeywordConfigMutationOptions(options));
+    }
 
 export const getGetSheetsStatusUrl = () => {
 

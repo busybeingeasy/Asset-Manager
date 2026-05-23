@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { logger } from "./logger";
+import { getKeywordConfig } from "./keywords";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
@@ -48,28 +49,30 @@ const NAVER_RSS_URLS: Record<string, string> = {
   규제안전: "https://news.naver.com/rss/section/103.xml",
 };
 
-const KEYWORDS_KOR = [
+// Static brand/commodity terms always extracted (not risk-related)
+const STATIC_KEYWORDS = [
   "농심", "오뚜기", "CJ", "삼양", "풀무원", "불닭", "라면", "대두",
   "밀가루", "설탕", "소금", "유지", "참기름", "콩기름", "버터", "계란",
   "육수", "국물", "장류", "고추장", "된장", "간장", "유가", "곡물",
-  "축산", "할당관세", "수입", "수출", "물가", "원자재",
-];
-
-const KEYWORDS_ENG = [
+  "축산", "수입", "수출", "물가", "원자재",
   "tariff", "supply chain", "commodity", "price", "export", "import",
-  "logistics", "shipping", "inflation", "raw material", "food", "agriculture",
+  "logistics", "shipping", "raw material", "food", "agriculture",
 ];
 
 function extractKeywords(text: string): string[] {
   const keywords = new Set<string>();
   const lowerText = text.toLowerCase();
 
-  KEYWORDS_KOR.forEach((kw) => {
-    if (lowerText.includes(kw)) keywords.add(kw);
+  // Static terms
+  STATIC_KEYWORDS.forEach((kw) => {
+    if (lowerText.includes(kw.toLowerCase())) keywords.add(kw);
   });
 
-  KEYWORDS_ENG.forEach((kw) => {
-    if (lowerText.includes(kw.toLowerCase())) keywords.add(kw);
+  // Dynamic risk keywords from config
+  const config = getKeywordConfig();
+  const allConfigKws = [...config.high, ...config.medium].filter((e) => e.enabled);
+  allConfigKws.forEach(({ value }) => {
+    if (lowerText.includes(value.toLowerCase())) keywords.add(value);
   });
 
   return Array.from(keywords);

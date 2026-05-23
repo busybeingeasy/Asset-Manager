@@ -4,6 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { logger } from "./logger";
 import { readNews, type NewsArticle } from "./crawler";
+import { getRiskLevel } from "./keywords";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
@@ -21,9 +22,7 @@ const HEADER_ROW = [
   "URL",
 ];
 
-// Keywords that raise risk level
-const HIGH_RISK_KEYWORDS = ["리콜", "수입금지", "검역", "recall", "ban", "embargo", "contamination", "오염"];
-const MEDIUM_RISK_KEYWORDS = ["할당관세", "tariff", "shortage", "수급", "가격상승", "수출제한"];
+// Risk level is computed dynamically from keyword config
 
 interface SheetsState {
   lastExportAt: string | null;
@@ -54,14 +53,8 @@ function isConfigured(): boolean {
   );
 }
 
-function getRiskLevel(article: NewsArticle): string {
-  const text = (article.title + " " + (article.description ?? "") + " " + article.keywords.join(" ")).toLowerCase();
-  if (HIGH_RISK_KEYWORDS.some((kw) => text.includes(kw.toLowerCase()))) return "HIGH";
-  if (MEDIUM_RISK_KEYWORDS.some((kw) => text.includes(kw.toLowerCase()))) return "MEDIUM";
-  return "LOW";
-}
-
 function articleToRow(article: NewsArticle): string[] {
+  const text = article.title + " " + (article.description ?? "") + " " + article.keywords.join(" ");
   return [
     article.timestamp,
     article.pubDate,
@@ -70,7 +63,7 @@ function articleToRow(article: NewsArticle): string[] {
     article.title.replace(/<[^>]*>/g, ""),
     (article.description ?? "").replace(/<[^>]*>/g, ""),
     article.keywords.join(", "),
-    getRiskLevel(article),
+    getRiskLevel(text),
     article.link,
   ];
 }
