@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "식품 뉴스 대시보드"
+version = "1.0.0"
+id = "artifacts/food-news"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26164
+
+[services.development]
+run = "pnpm --filter @workspace/food-news run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/food-news", "run", "build" ]
+publicDir = "artifacts/food-news/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26164"
+BASE_PATH = "/"

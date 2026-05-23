@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>식품 뉴스 대시보드 - 현대그린푸드 구매팀</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: #0F1117;
+      color: #E5E7EB;
+      font-family: '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', sans-serif;
+    }
+    
+    #root {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    
+    function FoodNewsDashboard() {
+      const [news, setNews] = useState([]);
+      const [tariffs, setTariffs] = useState(null);
+      const [apiKey, setApiKey] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [selectedCategory, setSelectedCategory] = useState('전체');
+      const [searchKeyword, setSearchKeyword] = useState('');
+      const [lastUpdated, setLastUpdated] = useState(null);
+      const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+      const categories = ['전체', '업계뉴스', '원재료동향', '규제안전', '해외뉴스'];
+
+      useEffect(() => {
+        fetchData();
+        window.addEventListener('resize', () => {
+          setIsMobile(window.innerWidth < 768);
+        });
+      }, []);
+
+      const fetchData = async () => {
+        try {
+          const [newsRes, tariffRes] = await Promise.all([
+            fetch('/api/news'),
+            fetch('/api/tariffs'),
+          ]);
+          
+          const newsData = await newsRes.json();
+          const tariffData = await tariffRes.json();
+          
+          setNews(newsData);
+          setTariffs(tariffData);
+          setLastUpdated(new Date().toLocaleString('ko-KR'));
+        } catch (err) {
+          console.error('Failed to fetch data:', err);
+        }
+      };
+
+      const handleCrawl = async () => {
+        setLoading(true);
+        try {
+          const response = await fetch('/api/crawl', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          const result = await response.json();
+          if (result.status === 'success') {
+            alert(`✅ ${result.count}개의 뉴스가 업데이트되었습니다`);
+            await fetchData();
+          }
+        } catch (err) {
+          alert('크롤링 중 오류 발생: ' + err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const filteredNews = news.filter(item => {
+        const matchCategory = selectedCategory === '전체' || item.category === selectedCategory;
+        const matchKeyword = !searchKeyword || 
+          item.title.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+          item.keywords.some(k => k.toLowerCase().includes(searchKeyword.toLowerCase()));
+        return matchCategory && matchKeyword;
+      }).sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+
+      const styles = {
+        container: {
+          backgroundColor: '#0F1117',
+          color: '#E5E7EB',
+          minHeight: '100vh',
+          padding: isMobile ? '16px' : '24px',
+          fontFamily: '"Pretendard", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", sans-serif',
+        },
+        header: {
+          marginBottom: '24px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          paddingBottom: '16px',
+        },
+        headerTop: {
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          marginBottom: '16px',
+          gap: '12px',
+        },
+        title: {
+          fontSize: isMobile ? '22px' : '28px',
+          fontWeight: 600,
+          margin: 0,
+          color: '#FFFFFF',
+        },
+        apiKeyInput: {
+          display: 'flex',
+          gap: '8px',
+          flexDirection: isMobile ? 'column' : 'row',
+        },
+        input: {
+          padding: '10px 12px',
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 107, 53, 0.3)',
+          borderRadius: '6px',
+          color: '#E5E7EB',
+          flex: 1,
+          fontSize: '13px',
+          minWidth: 0,
+        },
+        button: {
+          padding: '10px 16px',
+          backgroundColor: '#FF6B35',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '13px',
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+          opacity: loading ? 0.6 : 1,
+          pointerEvents: loading ? 'none' : 'auto',
+        },
+        searchBar: {
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+        },
+        searchInput: {
+          flex: 1,
+          padding: '10px 12px',
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '6px',
+          color: '#E5E7EB',
+          fontSize: '13px',
+          width: isMobile ? '100%' : 'auto',
+        },
+        updateTime: {
+          fontSize: '11px',
+          color: '#6B7280',
+          whiteSpace: 'nowrap',
+        },
+        categoryTabs: {
+          display: 'flex',
+          gap: '8px',
+          marginBottom: '20px',
+          overflowX: 'auto',
+          paddingBottom: '8px',
+        },
+        tab: {
+          padding: '8px 12px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '20px',
+          cursor: 'pointer',
+          fontSize: '12px',
+          fontWeight: 500,
+          whiteSpace: 'nowrap',
+          transition: 'all 0.2s',
+          backgroundColor: selectedCategory === null ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+          color: '#9CA3AF',
+        },
+        newsGrid: {
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: isMobile ? '12px' : '16px',
+          marginBottom: '32px',
+        },
+        newsCard: {
+          backgroundColor: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          padding: '14px',
+          transition: 'all 0.3s',
+          cursor: 'pointer',
+          textDecoration: 'none',
+          color: 'inherit',
+          display: 'block',
+        },
+        cardHeader: {
+          display: 'flex',
+          gap: '6px',
+          marginBottom: '10px',
+          flexWrap: 'wrap',
+        },
+        badge: {
+          fontSize: '11px',
+          padding: '3px 8px',
+          backgroundColor: 'rgba(99, 102, 241, 0.2)',
+          borderRadius: '4px',
+          color: '#A5B4FC',
+        },
+        category: {
+          fontSize: '11px',
+          padding: '3px 8px',
+          backgroundColor: 'rgba(255, 107, 53, 0.2)',
+          borderRadius: '4px',
+          color: '#FF9970',
+        },
+        newsTitle: {
+          fontSize: isMobile ? '14px' : '15px',
+          fontWeight: 600,
+          margin: '0 0 8px 0',
+          color: '#FFFFFF',
+          lineHeight: '1.4',
+        },
+        newsDescription: {
+          fontSize: '12px',
+          color: '#9CA3AF',
+          margin: '0 0 10px 0',
+          lineHeight: '1.5',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        },
+        summary: {
+          fontSize: '11px',
+          padding: '8px 10px',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderLeft: '2px solid #3B82F6',
+          borderRadius: '3px',
+          color: '#93C5FD',
+          marginBottom: '10px',
+          lineHeight: '1.4',
+        },
+        keywords: {
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '4px',
+          marginBottom: '10px',
+        },
+        keyword: {
+          fontSize: '10px',
+          padding: '3px 6px',
+          backgroundColor: 'rgba(34, 197, 94, 0.2)',
+          borderRadius: '3px',
+          color: '#86EFAC',
+        },
+        footer: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '11px',
+          color: '#6B7280',
+          marginTop: '10px',
+        },
+        emptyState: {
+          gridColumn: '1 / -1',
+          textAlign: 'center',
+          padding: isMobile ? '32px 16px' : '48px 24px',
+        },
+      };
+
+      return (
+        <div style={styles.container}>
+          {/* 헤더 */}
+          <header style={styles.header}>
+            <div style={styles.headerTop}>
+              <h1 style={styles.title}>🍜 식품 뉴스 대시보드</h1>
+              <button
+                onClick={handleCrawl}
+                disabled={loading}
+                style={styles.button}
+              >
+                {loading ? '크롤링 중...' : '🔄 지금 업데이트'}
+              </button>
+            </div>
+            
+            <div style={styles.searchBar}>
+              <input
+                type="text"
+                placeholder="키워드 검색 (예: 농심, 대두, 할당관세)..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                style={styles.searchInput}
+              />
+              <span style={styles.updateTime}>마지막 업데이트: {lastUpdated}</span>
+            </div>
+          </header>
+
+          {/* 카테고리 탭 */}
+          <div style={styles.categoryTabs}>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  ...styles.tab,
+                  backgroundColor: selectedCategory === cat ? '#FF6B35' : 'rgba(255, 255, 255, 0.05)',
+                  borderColor: selectedCategory === cat ? '#FF6B35' : 'rgba(255, 255, 255, 0.1)',
+                  color: selectedCategory === cat ? '#fff' : '#9CA3AF',
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* 뉴스 그리드 */}
+          <div style={styles.newsGrid}>
+            {filteredNews.length === 0 ? (
+              <div style={styles.emptyState}>
+                <p style={{color: '#9CA3AF'}}>검색 결과가 없습니다. API 키를 입력하고 업데이트 버튼을 클릭하세요.</p>
+              </div>
+            ) : (
+              filteredNews.map(item => (
+                <a 
+                  href={item.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  key={item.id}
+                  style={{textDecoration: 'none'}}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 107, 53, 0.05)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 107, 53, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
+                >
+                  <div style={styles.newsCard}>
+                    <div style={styles.cardHeader}>
+                      <span style={styles.badge}>{item.source === 'google' ? '🌍 해외' : '🇰🇷 국내'}</span>
+                      <span style={styles.category}>{item.category}</span>
+                    </div>
+                    
+                    <h3 style={styles.newsTitle}>{item.title}</h3>
+                    <p style={styles.newsDescription}>{item.description}</p>
+                    
+                    {item.keywords && item.keywords.length > 0 && (
+                      <div style={styles.keywords}>
+                        {item.keywords.slice(0, 5).map(keyword => (
+                          <span key={keyword} style={styles.keyword}>
+                            #{keyword}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div style={styles.footer}>
+                      <span style={styles.date}>
+                        {new Date(item.pubDate).toLocaleDateString('ko-KR')}
+                      </span>
+                      <span style={{color: '#FF6B35', fontWeight: 500}}>읽기 →</span>
+                    </div>
+                  </div>
+                </a>
+              ))
+            )}
+          </div>
+
+          {/* 할당관세 섹션 */}
+          {tariffs && (
+            <div>
+              <h2 style={{fontSize: '18px', fontWeight: 600, margin: '0 0 12px 0', color: '#FFFFFF'}}>
+                📋 할당관세 정보
+              </h2>
+              <div style={{
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                border: '1px solid rgba(34, 197, 94, 0.3)',
+                borderRadius: '8px',
+                padding: '16px',
+              }}>
+                <p style={{color: '#9CA3AF', margin: '0 0 8px 0', fontSize: '13px'}}>
+                  출처: {tariffs.source} | 최종 업데이트: {new Date(tariffs.lastUpdated).toLocaleDateString('ko-KR')}
+                </p>
+                <p style={{color: '#E5E7EB', margin: 0, fontSize: '14px'}}>
+                  🔗 <a href="https://www.maf.go.kr" target="_blank" rel="noopener noreferrer" style={{color: '#FF6B35'}}>
+                    농림축산식품부 공식 홈페이지
+                  </a>에서 최신 할당관세 정보를 확인하세요.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.render(<FoodNewsDashboard />, document.getElementById('root'));
+  </script>
+</body>
+</html>

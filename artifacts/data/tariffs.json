@@ -1,0 +1,43 @@
+{
+  "source": "농림축산식품부 공지",
+  "lastUpdated": "2026-05-23T14:29:27.420Z",
+  "items": [
+    {
+      "id": "tariff-001",
+      "title": "할당관세 공시 정보 (농림축산식품부)",
+      "link": "https://www.mafra.go.kr",
+      "keywords": [
+        "할당관세",
+        "수입",
+        "곡물",
+        "축산물"
+      ],
+      "description": "농림축산식품부에서 공시한 최신 할당관세 정보입니다. 정기적으로 확인하세요.",
+      "timestamp": "2026-05-23T14:29:27.420Z"
+    },
+    {
+      "id": "tariff-002",
+      "title": "관세청 품목별 세율 조회",
+      "link": "https://unipass.customs.go.kr",
+      "keywords": [
+        "관세율",
+        "수입관세",
+        "HS코드"
+      ],
+      "description": "관세청 유니패스에서 품목별 수입 관세율을 조회할 수 있습니다.",
+      "timestamp": "2026-05-23T14:29:27.420Z"
+    },
+    {
+      "id": "tariff-003",
+      "title": "식품 원재료 수입 동향 (aT 한국농수산식품유통공사)",
+      "link": "https://www.at.or.kr",
+      "keywords": [
+        "수입동향",
+        "원재료",
+        "식품유통"
+      ],
+      "description": "aT 한국농수산식품유통공사에서 제공하는 식품 원재료 수입 동향 정보입니다.",
+      "timestamp": "2026-05-23T14:29:27.420Z"
+    }
+  ]
+}

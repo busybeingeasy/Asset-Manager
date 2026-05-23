@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Food News Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: news
+    description: News operations
+  - name: crawl
+    description: Crawling operations
+  - name: tariffs
+    description: Tariff information
 paths:
   /healthz:
     get:
@@ -24,6 +30,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /news:
+    get:
+      operationId: getNews
+      tags: [news]
+      summary: Get all news articles
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of news articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsArticle"
+
+  /news/stats:
+    get:
+      operationId: getNewsStats
+      tags: [news]
+      summary: Get news statistics
+      responses:
+        "200":
+          description: News statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsStats"
+
+  /crawl:
+    post:
+      operationId: triggerCrawl
+      tags: [crawl]
+      summary: Trigger news crawling
+      responses:
+        "200":
+          description: Crawl result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrawlResult"
+
+  /tariffs:
+    get:
+      operationId: getTariffs
+      tags: [tariffs]
+      summary: Get tariff information
+      responses:
+        "200":
+          description: Tariff information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TariffInfo"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +106,117 @@ components:
       required:
         - status
 
+    NewsArticle:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        link:
+          type: string
+        pubDate:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - category
+        - title
+        - link
+        - pubDate
+        - keywords
+        - source
+        - timestamp
+
+    NewsStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        byCategory:
+          type: object
+          additionalProperties:
+            type: integer
+        lastCrawled:
+          type: ["string", "null"]
+        sources:
+          type: object
+          properties:
+            naver:
+              type: integer
+            google:
+              type: integer
+          required:
+            - naver
+            - google
+      required:
+        - total
+        - byCategory
+        - lastCrawled
+        - sources
+
+    CrawlResult:
+      type: object
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+        message:
+          type: string
+      required:
+        - status
+        - count
+        - message
+
+    TariffInfo:
+      type: object
+      properties:
+        source:
+          type: string
+        lastUpdated:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TariffItem"
+      required:
+        - source
+        - lastUpdated
+        - items
+
+    TariffItem:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        link:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - id
+        - title
+        - link
+        - keywords
+        - description
+        - timestamp
