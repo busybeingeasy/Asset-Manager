@@ -158,7 +158,7 @@ export function KeywordSettingsModal({ open, onClose }: Props) {
 
   const handleSave = () => {
     saveConfig.mutate(
-      { high: config.high, medium: config.medium },
+      { data: { high: config.high, medium: config.medium } },
       {
         onSuccess: () => {
           toast.success("키워드 설정이 저장되었습니다");
