@@ -198,7 +198,7 @@ export default function Dashboard() {
           </Button>
         </div>
       </header>
-      <KeywordSettingsModal open={keywordModalOpen} onClose={() => setKeywordModalOpen(false)} />
+      <KeywordSettingsModal open={keywordModalOpen} onOpenChange={setKeywordModalOpen} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
