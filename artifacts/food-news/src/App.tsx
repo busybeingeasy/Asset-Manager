@@ -15,4 +15,26 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route component={NotFound}
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
+
+function App() {
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+        <Toaster theme="dark" position="top-right" />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
