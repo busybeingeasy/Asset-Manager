@@ -176,8 +176,8 @@ export function KeywordSettingsModal({ open, onOpenChange }: KeywordSettingsModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-card border-border">
-        <DialogHeader>
+      <DialogContent className="max-w-lg bg-card border-border flex flex-col max-h-[80vh]">
+        <div className="overflow-y-auto flex-1 px-1"><DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <Settings className="w-4 h-4" /> 키워드 설정
           </DialogTitle>
@@ -212,6 +212,6 @@ export function KeywordSettingsModal({ open, onOpenChange }: KeywordSettingsModa
 
         {activeTab === "filter" && <FoodFilterEditor />}
       </DialogContent>
-    </Dialog>
+    </div></Dialog>
   );
 }
