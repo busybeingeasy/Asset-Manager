@@ -64,7 +64,7 @@ function GroupEditor({ level, entries, onChange }: GroupEditorProps) {
         {entries.map((e) => (
           <span key={e.id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs cursor-pointer select-none ${e.enabled ? activeTagClass : tagClass} opacity-${e.enabled ? "100" : "50"}`}>
             <span onClick={() => toggleEntry(e.id)}>{e.value}</span>
-            <button onClick={() => deleteEntry(e.id)} className="ml-1 hover:text-red-300"><X className="w-3 h-3" /></button>
+            <button onClick={(ev) => { ev.stopPropagation(); deleteEntry(e.id); }} className="ml-1 hover:text-red-300"><X className="w-3 h-3" /></button>
           </span>
         ))}
       </div>
