@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useGetKeywordConfig, useSaveKeywordConfig, getGetKeywordConfigQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, Settings, X, AlertTriangle, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Settings, X, AlertTriangle, AlertCircle, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const API_BASE = "https://workspaceapi-server-production-8898.up.railway.app";
 
 interface KeywordEntry {
   id: string;
@@ -30,17 +32,10 @@ interface GroupEditorProps {
 
 function GroupEditor({ level, entries, onChange }: GroupEditorProps) {
   const [newValue, setNewValue] = useState("");
-
   const isHigh = level === "high";
-  const accentClass = isHigh
-    ? "text-red-400 border-red-900/40 bg-red-950/20"
-    : "text-amber-400 border-amber-900/40 bg-amber-950/20";
-  const tagClass = isHigh
-    ? "bg-red-900/30 text-red-300 border border-red-800/40"
-    : "bg-amber-900/30 text-amber-300 border border-amber-800/40";
-  const activeTagClass = isHigh
-    ? "bg-red-900/50 text-red-200 border border-red-700/60"
-    : "bg-amber-900/50 text-amber-200 border border-amber-700/60";
+  const accentClass = isHigh ? "text-red-400 border-red-900/40 bg-red-950/20" : "text-amber-400 border-amber-900/40 bg-amber-950/20";
+  const tagClass = isHigh ? "bg-red-900/30 text-red-300 border border-red-800/40" : "bg-amber-900/30 text-amber-300 border border-amber-800/40";
+  const activeTagClass = isHigh ? "bg-red-900/50 text-red-200 border border-red-700/60" : "bg-amber-900/50 text-amber-200 border border-amber-700/60";
 
   const addKeyword = () => {
     const trimmed = newValue.trim();
@@ -53,197 +48,169 @@ function GroupEditor({ level, entries, onChange }: GroupEditorProps) {
     setNewValue("");
   };
 
-  const toggleEntry = (id: string) => {
-    onChange(entries.map((e) => (e.id === id ? { ...e, enabled: !e.enabled } : e)));
-  };
-
-  const deleteEntry = (id: string) => {
-    onChange(entries.filter((e) => e.id !== id));
-  };
+  const toggleEntry = (id: string) => onChange(entries.map((e) => (e.id === id ? { ...e, enabled: !e.enabled } : e)));
+  const deleteEntry = (id: string) => onChange(entries.filter((e) => e.id !== id));
 
   return (
     <div className={`rounded-lg border p-4 ${accentClass}`}>
       <div className="flex items-center gap-2 mb-3">
-        {isHigh ? (
-          <AlertTriangle className="w-4 h-4 text-red-400 flex-none" />
-        ) : (
-          <AlertCircle className="w-4 h-4 text-amber-400 flex-none" />
-        )}
+        {isHigh ? <AlertTriangle className="w-4 h-4 text-red-400 flex-none" /> : <AlertCircle className="w-4 h-4 text-amber-400 flex-none" />}
         <span className={`text-sm font-semibold ${isHigh ? "text-red-400" : "text-amber-400"}`}>
           {isHigh ? "HIGH 위험" : "MEDIUM 위험"}
         </span>
-        <span className="text-xs text-muted-foreground ml-auto">
-          {entries.filter((e) => e.enabled).length}/{entries.length} 활성화
-        </span>
+        <span className="text-xs text-muted-foreground ml-auto">{entries.filter((e) => e.enabled).length}/{entries.length} 활성화</span>
       </div>
-
-      {/* Keyword tags */}
-      <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
-        {entries.length === 0 && (
-          <span className="text-xs text-muted-foreground italic">키워드 없음</span>
-        )}
-        {entries.map((entry) => (
-          <div
-            key={entry.id}
-            className={`group flex items-center gap-1 px-2 py-0.5 rounded-sm text-xs font-mono cursor-pointer select-none transition-all ${
-              entry.enabled ? activeTagClass : "bg-muted/20 text-muted-foreground border border-border/30 line-through"
-            }`}
-          >
-            <span onClick={() => toggleEntry(entry.id)} className="py-0.5">
-              {entry.value}
-            </span>
-            <button
-              onClick={() => deleteEntry(entry.id)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity ml-0.5 text-muted-foreground hover:text-white"
-              title="삭제"
-            >
-              <X className="w-2.5 h-2.5" />
-            </button>
-          </div>
+      <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
+        {entries.map((e) => (
+          <span key={e.id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs cursor-pointer select-none ${e.enabled ? activeTagClass : tagClass} opacity-${e.enabled ? "100" : "50"}`}>
+            <span onClick={() => toggleEntry(e.id)}>{e.value}</span>
+            <button onClick={() => deleteEntry(e.id)} className="ml-1 hover:text-red-300"><X className="w-3 h-3" /></button>
+          </span>
         ))}
       </div>
-
-      {/* Add input */}
       <div className="flex gap-2">
-        <Input
-          value={newValue}
-          onChange={(e) => setNewValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); addKeyword(); }
-          }}
-          placeholder="키워드 입력 후 Enter..."
-          className="h-7 text-xs bg-background/50 border-border/50 focus-visible:ring-1 focus-visible:ring-primary/50"
-        />
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={addKeyword}
-          className="h-7 px-2 text-xs border-border/50"
-        >
-          <Plus className="w-3 h-3" />
-        </Button>
+        <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addKeyword()} placeholder="키워드 추가..." className="h-7 text-xs bg-background/50" />
+        <Button size="sm" variant="outline" onClick={addKeyword} className="h-7 px-2"><Plus className="w-3 h-3" /></Button>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1.5">
-        클릭하여 활성화/비활성화 · 우측 × 로 삭제
-      </p>
     </div>
   );
 }
 
-interface Props {
-  open: boolean;
-  onClose: () => void;
-}
+// 식품 필터 키워드 에디터
+function FoodFilterEditor() {
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [newValue, setNewValue] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-export function KeywordSettingsModal({ open, onClose }: Props) {
-  const queryClient = useQueryClient();
-  const { data: remoteConfig } = useGetKeywordConfig();
-  const saveConfig = useSaveKeywordConfig();
-
-  const [config, setConfig] = useState<KeywordConfig>({ high: [], medium: [] });
-  const [dirty, setDirty] = useState(false);
-
-  // Sync from server when opened
   useEffect(() => {
-    if (remoteConfig && open) {
-      setConfig({ high: remoteConfig.high, medium: remoteConfig.medium });
-      setDirty(false);
+    fetch(`${API_BASE}/api/keywords/food-filter`)
+      .then((r) => r.json())
+      .then((data) => { setKeywords(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const addKeyword = () => {
+    const trimmed = newValue.trim();
+    if (!trimmed) return;
+    if (keywords.some((k) => k.toLowerCase() === trimmed.toLowerCase())) {
+      toast.error("이미 존재하는 키워드입니다");
+      return;
     }
-  }, [remoteConfig, open]);
-
-  const handleChange = (level: "high" | "medium", entries: KeywordEntry[]) => {
-    setConfig((prev) => ({ ...prev, [level]: entries }));
-    setDirty(true);
+    setKeywords([...keywords, trimmed]);
+    setNewValue("");
   };
 
-  const handleSave = () => {
-    saveConfig.mutate(
-      { data: { high: config.high, medium: config.medium } },
-      {
-        onSuccess: () => {
-          toast.success("키워드 설정이 저장되었습니다");
-          queryClient.invalidateQueries({ queryKey: getGetKeywordConfigQueryKey() });
-          setDirty(false);
-        },
-        onError: () => toast.error("저장 중 오류가 발생했습니다"),
-      }
-    );
+  const deleteKeyword = (kw: string) => setKeywords(keywords.filter((k) => k !== kw));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch(`${API_BASE}/api/keywords/food-filter`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(keywords),
+      });
+      toast.success("식품 필터 키워드가 저장되었습니다");
+    } catch {
+      toast.error("저장 중 오류가 발생했습니다");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReset = () => {
-    if (!remoteConfig) return;
-    setConfig({ high: remoteConfig.high, medium: remoteConfig.medium });
-    setDirty(false);
-  };
-
-  const enabledHigh = config.high.filter((e) => e.enabled).length;
-  const enabledMedium = config.medium.filter((e) => e.enabled).length;
+  if (loading) return <div className="text-xs text-muted-foreground">불러오는 중...</div>;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg bg-card border-border text-foreground">
+    <div className="rounded-lg border p-4 text-green-400 border-green-900/40 bg-green-950/20">
+      <div className="flex items-center gap-2 mb-3">
+        <Filter className="w-4 h-4 text-green-400 flex-none" />
+        <span className="text-sm font-semibold text-green-400">식품 관련 필터</span>
+        <span className="text-xs text-muted-foreground ml-auto">{keywords.length}개 키워드</span>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">이 키워드 중 하나라도 포함된 기사만 수집됩니다. 식품과 무관한 기사를 걸러냅니다.</p>
+      <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem] max-h-40 overflow-y-auto">
+        {keywords.map((kw) => (
+          <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-green-900/50 text-green-200 border border-green-700/60">
+            {kw}
+            <button onClick={() => deleteKeyword(kw)} className="ml-1 hover:text-red-300"><X className="w-3 h-3" /></button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2 mb-3">
+        <Input value={newValue} onChange={(e) => setNewValue(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addKeyword()} placeholder="키워드 추가..." className="h-7 text-xs bg-background/50" />
+        <Button size="sm" variant="outline" onClick={addKeyword} className="h-7 px-2"><Plus className="w-3 h-3" /></Button>
+      </div>
+      <Button size="sm" onClick={save} disabled={saving} className="w-full h-7 text-xs bg-green-900/50 hover:bg-green-900/70 text-green-200">
+        {saving ? "저장 중..." : "저장"}
+      </Button>
+    </div>
+  );
+}
+
+interface KeywordSettingsModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function KeywordSettingsModal({ open, onOpenChange }: KeywordSettingsModalProps) {
+  const queryClient = useQueryClient();
+  const { data: config, isLoading } = useGetKeywordConfig();
+  const saveConfig = useSaveKeywordConfig();
+  const [local, setLocal] = useState<KeywordConfig>({ high: [], medium: [] });
+  const [activeTab, setActiveTab] = useState<"risk" | "filter">("risk");
+
+  useEffect(() => {
+    if (config) setLocal({ high: config.high ?? [], medium: config.medium ?? [] });
+  }, [config]);
+
+  const handleSaveRisk = () => {
+    saveConfig.mutate({ data: local }, {
+      onSuccess: () => {
+        toast.success("위험 키워드가 저장되었습니다");
+        queryClient.invalidateQueries({ queryKey: getGetKeywordConfigQueryKey() });
+      },
+      onError: () => toast.error("저장 중 오류가 발생했습니다"),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-card border-border">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Settings className="w-4 h-4 text-primary" />
-            키워드 알림 설정
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <Settings className="w-4 h-4" /> 키워드 설정
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
-            뉴스 카드 위험도, Slack 알림, Google Sheets 내보내기에 적용됩니다.
-            키워드를 클릭하면 활성/비활성 전환, × 로 삭제합니다.
-          </p>
         </DialogHeader>
 
-        <div className="space-y-3 py-1">
-          {/* Summary row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground px-0.5">
-            <span>
-              <span className="text-red-400 font-medium">HIGH</span> {enabledHigh}개 활성
-            </span>
-            <span>·</span>
-            <span>
-              <span className="text-amber-400 font-medium">MEDIUM</span> {enabledMedium}개 활성
-            </span>
-            {dirty && (
-              <span className="ml-auto text-orange-400/80 text-[10px]">저장되지 않은 변경사항</span>
+        {/* 탭 */}
+        <div className="flex gap-2 border-b border-border pb-2">
+          <button onClick={() => setActiveTab("risk")} className={`text-xs px-3 py-1 rounded-t ${activeTab === "risk" ? "bg-card border border-border border-b-card text-foreground" : "text-muted-foreground"}`}>
+            위험 키워드
+          </button>
+          <button onClick={() => setActiveTab("filter")} className={`text-xs px-3 py-1 rounded-t ${activeTab === "filter" ? "bg-card border border-border border-b-card text-foreground" : "text-muted-foreground"}`}>
+            식품 필터
+          </button>
+        </div>
+
+        {activeTab === "risk" && (
+          <div className="space-y-4">
+            <p className="text-xs text-muted-foreground">기사에 포함된 키워드에 따라 위험도(HIGH/MEDIUM)가 자동 분류됩니다.</p>
+            {isLoading ? (
+              <div className="text-xs text-muted-foreground">불러오는 중...</div>
+            ) : (
+              <>
+                <GroupEditor level="high" entries={local.high} onChange={(e) => setLocal((p) => ({ ...p, high: e }))} />
+                <GroupEditor level="medium" entries={local.medium} onChange={(e) => setLocal((p) => ({ ...p, medium: e }))} />
+                <Button onClick={handleSaveRisk} disabled={saveConfig.isPending} className="w-full" size="sm">
+                  {saveConfig.isPending ? "저장 중..." : "위험 키워드 저장"}
+                </Button>
+              </>
             )}
           </div>
+        )}
 
-          <GroupEditor
-            level="high"
-            entries={config.high}
-            onChange={(entries) => handleChange("high", entries)}
-          />
-          <GroupEditor
-            level="medium"
-            entries={config.medium}
-            onChange={(entries) => handleChange("medium", entries)}
-          />
-        </div>
-
-        <div className="flex justify-between gap-2 pt-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            disabled={!dirty || saveConfig.isPending}
-            className="text-xs text-muted-foreground hover:text-white"
-          >
-            변경사항 취소
-          </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
-              닫기
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!dirty || saveConfig.isPending}
-              className="text-xs"
-            >
-              {saveConfig.isPending ? "저장 중..." : "저장"}
-            </Button>
-          </div>
-        </div>
+        {activeTab === "filter" && <FoodFilterEditor />}
       </DialogContent>
     </Dialog>
   );
