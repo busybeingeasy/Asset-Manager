@@ -5,33 +5,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import { useEffect } from "react";
+import { setBaseUrl } from "@workspace/api-client-react";
 
 const queryClient = new QueryClient();
+
+setBaseUrl("https://workspaceapi-server-production-8898.up.railway.app");
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
-function App() {
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster theme="dark" position="top-right" />
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-}
-
-export default App;
+      <Route component={NotFound}
