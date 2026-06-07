@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "---Rn7HOUAxNKAurO-tcb"
+uri = "file://food-news-dashboard.tar.gz"
+type = "unspecified"
+title = "식품 뉴스 대시보드 — 전체 소스코드"
