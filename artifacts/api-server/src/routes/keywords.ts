@@ -19,3 +19,18 @@ router.put("/keywords", async (req, res): Promise<void> => {
 });
 
 export default router;
+
+import { getFoodFilterKeywords, saveFoodFilterKeywords } from "../lib/keywords";
+
+router.get("/keywords/food-filter", (_req, res): void => {
+  res.json(getFoodFilterKeywords());
+});
+
+router.put("/keywords/food-filter", async (req, res): Promise<void> => {
+  const keywords = req.body;
+  if (!Array.isArray(keywords)) {
+    res.status(400).json({ error: "keywords must be an array" });
+    return;
+  }
+  res.json(saveFoodFilterKeywords(keywords));
+});

@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { logger } from "./logger";
-import { getKeywordConfig } from "./keywords";
+import { getKeywordConfig, isFoodRelated } from "./keywords";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
@@ -103,7 +103,7 @@ async function fetchNaverSearchAPI(category: string, query: string, display = 20
         source: "naver",
         timestamp: new Date().toISOString(),
       };
-    }).filter((a) => !!a.title);
+    }).filter((a) => !!a.title && isFoodRelated(a.title, a.description ?? ""));
   } catch (err) {
     logger.error({ err, query }, "Error fetching Naver Search API");
     return [];
@@ -149,7 +149,7 @@ async function fetchGoogleNewsRSS(query: string): Promise<NewsArticle[]> {
       const description = stripHtml(item.description?.[0] ?? "");
       const link = item.link?.[0] ?? "";
       const pubDate = item.pubDate?.[0] ?? new Date().toISOString();
-      if (!title) continue;
+      if (!title || !isFoodRelated(title, description)) continue;
       news.push({
         id: `google-${query.slice(0,10)}-${i}-${Date.now()}`,
         category: "해외뉴스", title,

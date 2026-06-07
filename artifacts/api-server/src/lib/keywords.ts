@@ -92,3 +92,37 @@ export function getRiskLevel(text: string): "HIGH" | "MEDIUM" | "LOW" {
   if (medium.some((kw) => lower.includes(kw.toLowerCase()))) return "MEDIUM";
   return "LOW";
 }
+
+const FOOD_FILTER_FILE = path.join(DATA_DIR, "food-filter.json");
+
+const DEFAULT_FOOD_FILTER = [
+  "식품","음식","식재료","원재료","농산물","축산","수산","곡물","밀","대두","옥수수",
+  "설탕","유지","버터","계란","육류","가공식품","식음료","라면","과자","음료","유통",
+  "식약처","농식품","농협","수입식품","수출식품","관세","할당관세","검역","작황",
+  "food","grain","soybean","wheat","corn","sugar","oil","commodity","agriculture",
+  "tariff","supply chain","recall","shortage","ingredient","edible","livestock",
+  "CJ","오뚜기","농심","풀무원","삼양","대상","롯데","SPC","빙그레","동원",
+];
+
+export function getFoodFilterKeywords(): string[] {
+  try {
+    if (fs.existsSync(FOOD_FILTER_FILE)) {
+      const data = JSON.parse(fs.readFileSync(FOOD_FILTER_FILE, "utf8")) as string[];
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+  } catch (err) {
+    logger.warn({ err }, "Failed to read food filter, using defaults");
+  }
+  return DEFAULT_FOOD_FILTER;
+}
+
+export function saveFoodFilterKeywords(keywords: string[]): string[] {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(FOOD_FILTER_FILE, JSON.stringify(keywords, null, 2));
+  return keywords;
+}
+
+export function isFoodRelated(title: string, description: string): boolean {
+  const text = (title + " " + description).toLowerCase();
+  return getFoodFilterKeywords().some((kw) => text.includes(kw.toLowerCase()));
+}
