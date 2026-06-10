@@ -4,6 +4,7 @@ import newsRouter from "./news";
 import scheduleRouter from "./schedule";
 import sheetsRouter from "./sheets";
 import keywordsRouter from "./keywords";
+import marketsRouter from "./markets";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(newsRouter);
 router.use(scheduleRouter);
 router.use(sheetsRouter);
 router.use(keywordsRouter);
+router.use(marketsRouter);
 
 export default router;
