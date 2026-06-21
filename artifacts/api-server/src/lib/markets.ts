@@ -7,15 +7,23 @@ export async function fetchOilPrices() {
   if (!key) { logger.warn("EIA_API_KEY 없음"); return []; }
   try {
     const [wti, brent] = await Promise.all([
-      axios.get(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${key}&frequency=daily&data[0]=value&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1`),
-      axios.get(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${key}&frequency=daily&data[0]=value&facets[product][]=EPCBRENT&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=1`),
+      axios.get(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${key}&frequency=daily&data[0]=value&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=2`),
+      axios.get(`https://api.eia.gov/v2/petroleum/pri/spt/data/?api_key=${key}&frequency=daily&data[0]=value&facets[product][]=EPCBRENT&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=2`),
     ]);
-    const wtiData = wti.data?.response?.data?.[0];
-    const brentData = brent.data?.response?.data?.[0];
-    return [
-      { name: "WTI유", symbol: "WTI", value: wtiData?.value, unit: "USD/배럴", date: wtiData?.period, source: "EIA" },
-      { name: "브렌트유", symbol: "BRENT", value: brentData?.value, unit: "USD/배럴", date: brentData?.period, source: "EIA" },
-    ].filter(d => d.value != null);
+    const wtiRows = wti.data?.response?.data ?? [];
+    const brentRows = brent.data?.response?.data ?? [];
+    const results: any[] = [];
+    if (wtiRows.length >= 1) {
+      const cur = parseFloat(wtiRows[0]?.value);
+      const prev = wtiRows[1] ? parseFloat(wtiRows[1]?.value) : null;
+      results.push({ name: "WTI유 (Crude Oil)", symbol: "WTI", value: cur, prevValue: prev, change: prev != null ? cur - prev : null, changePct: prev != null ? ((cur - prev) / prev) * 100 : null, unit: "USD/배럴", date: wtiRows[0]?.period, source: "EIA" });
+    }
+    if (brentRows.length >= 1) {
+      const cur = parseFloat(brentRows[0]?.value);
+      const prev = brentRows[1] ? parseFloat(brentRows[1]?.value) : null;
+      results.push({ name: "브렌트유 (Brent Crude)", symbol: "BRENT", value: cur, prevValue: prev, change: prev != null ? cur - prev : null, changePct: prev != null ? ((cur - prev) / prev) * 100 : null, unit: "USD/배럴", date: brentRows[0]?.period, source: "EIA" });
+    }
+    return results;
   } catch (err) { logger.error({ err }, "EIA fetch error"); return []; }
 }
 
@@ -32,92 +40,157 @@ const AV_COMMODITIES = [
 export async function fetchCommodityPrices() {
   const key = process.env.ALPHA_VANTAGE_API_KEY;
   if (!key) { logger.warn("ALPHA_VANTAGE_API_KEY 없음"); return []; }
-  const results = [];
+  const results: any[] = [];
   for (const c of AV_COMMODITIES) {
     try {
       const res = await axios.get(`https://www.alphavantage.co/query?function=${c.symbol}&interval=monthly&apikey=${key}`);
-      const data = res.data?.data?.[0];
-      if (data) {
-        results.push({ name: c.name, symbol: c.symbol, value: parseFloat(data.value), unit: c.unit, date: data.date, source: "Alpha Vantage" });
+      const rows = res.data?.data ?? [];
+      if (rows.length >= 2) {
+        const cur = parseFloat(rows[0].value);
+        const prev = parseFloat(rows[1].value);
+        results.push({ name: c.name, symbol: c.symbol, value: cur, prevValue: prev, change: cur - prev, changePct: ((cur - prev) / prev) * 100, unit: c.unit, date: rows[0].date, source: "Alpha Vantage" });
+      } else if (rows.length === 1) {
+        results.push({ name: c.name, symbol: c.symbol, value: parseFloat(rows[0].value), prevValue: null, change: null, changePct: null, unit: c.unit, date: rows[0].date, source: "Alpha Vantage" });
       }
-      await new Promise(r => setTimeout(r, 1200)); // rate limit
+      await new Promise(r => setTimeout(r, 1200));
     } catch (err) { logger.error({ err, symbol: c.symbol }, "AV fetch error"); }
   }
   return results;
 }
 
-// ── 한국은행 ECOS 환율 + 거시지표 ───────────────────────
-const ECOS_BASE = "https://ecos.bok.or.kr/api";
+// ── 한국은행 ECOS KeyStatisticList (환율 + 거시지표) ───────────
+// 주의: http (https 아님), KeyStatisticList 엔드포인트 사용 (StatisticSearch는 실패함)
+const ECOS_BASE = "http://ecos.bok.or.kr/api";
 
-async function fetchECOS(statCode: string, itemCode: string, name: string, unit: string) {
+export async function fetchECOSKeyStats() {
   const key = process.env.ECOS_API_KEY;
-  if (!key) return null;
+  if (!key) { logger.warn("ECOS_API_KEY 없음"); return { fx: [], macro: [] }; }
   try {
-    const today = new Date();
-    const yyyymm = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}`;
-    const from = `${today.getFullYear() - 1}${String(today.getMonth() + 1).padStart(2, "0")}`;
-    const url = `${ECOS_BASE}/StatisticSearch/${key}/json/kr/1/5/${statCode}/MM/${from}/${yyyymm}/${itemCode}`;
-    const res = await axios.get(url, { timeout: 10000 });
-    const rows = res.data?.StatisticSearch?.row ?? [];
-    if (rows.length === 0) return null;
-    const latest = rows[rows.length - 1];
-    const prev = rows[rows.length - 2];
-    const value = parseFloat(latest.DATA_VALUE);
-    const prevValue = prev ? parseFloat(prev.DATA_VALUE) : null;
-    const change = prevValue ? value - prevValue : null;
-    const changePct = prevValue ? ((value - prevValue) / prevValue) * 100 : null;
-    return { name, value, prevValue, change, changePct, unit, date: latest.TIME, source: "한국은행 ECOS" };
-  } catch (err) { logger.error({ err, statCode }, "ECOS fetch error"); return null; }
+    const res = await axios.get(`${ECOS_BASE}/KeyStatisticList/${key}/json/kr/1/100/`, { timeout: 15000 });
+    const rows = res.data?.KeyStatisticList?.row ?? [];
+
+    if (rows.length === 0) {
+      logger.warn({ raw: JSON.stringify(res.data).slice(0, 300) }, "ECOS KeyStatisticList returned no rows");
+    }
+
+    const fxKeywords = ["원/달러", "원/위안", "원/엔", "원/유로", "원/100엔"];
+    const macroKeywords = ["기준금리", "소비자물가", "생산자물가"];
+
+    const fx = rows
+      .filter((r: any) => fxKeywords.some(k => r.KEYSTAT_NAME?.includes(k)))
+      .map((r: any) => ({
+        name: r.KEYSTAT_NAME,
+        value: parseFloat(r.DATA_VALUE),
+        prevValue: null, change: null, changePct: null,
+        unit: r.UNIT_NAME,
+        date: r.CYCLE,
+        source: "한국은행 ECOS",
+      }));
+
+    const macro = rows
+      .filter((r: any) => macroKeywords.some(k => r.KEYSTAT_NAME?.includes(k)))
+      .map((r: any) => ({
+        name: r.KEYSTAT_NAME,
+        value: parseFloat(r.DATA_VALUE),
+        prevValue: null, change: null, changePct: null,
+        unit: r.UNIT_NAME,
+        date: r.CYCLE,
+        source: "한국은행 ECOS",
+      }));
+
+    logger.info({ fx: fx.length, macro: macro.length }, "ECOS KeyStatisticList fetched");
+    return { fx, macro };
+  } catch (err) {
+    logger.error({ err }, "ECOS KeyStatisticList fetch error");
+    return { fx: [], macro: [] };
+  }
 }
 
-export async function fetchExchangeRates() {
-  const [usd, eur, jpy, cny] = await Promise.all([
-    fetchECOS("731Y001", "0000001", "USD/KRW", "원"),
-    fetchECOS("731Y001", "0000002", "EUR/KRW", "원"),
-    fetchECOS("731Y001", "0000003", "JPY/KRW(100엔)", "원"),
-    fetchECOS("731Y001", "0000004", "CNY/KRW", "원"),
-  ]);
-  return [usd, eur, jpy, cny].filter(Boolean);
-}
+// ── FAO 식품가격지수 (공식 CSV 직접 파싱) ──────────────────
+// FAO가 매달 공개 발표 페이지에 올리는 공식 CSV를 사용.
+// 컬럼: Date, Food Price Index, Meat, Dairy, Cereals, Oils, Sugar
+// fenixservices/faostatservices API는 인증 게이트웨이로 막혀있어 이 방식이 더 안정적임
+const FAO_CSV_URL =
+  "https://www.fao.org/media/docs/worldfoodsituationlibraries/default-document-library/food_price_indices_data.csv";
 
-export async function fetchMacroIndicators() {
-  const [cpi, ppi, rate] = await Promise.all([
-    fetchECOS("901Y009", "0", "소비자물가지수 (CPI)", "%"),
-    fetchECOS("404Y014", "AAAAAA", "생산자물가지수 (PPI)", "%"),
-    fetchECOS("722Y001", "0101000", "기준금리", "%"),
-  ]);
-  return [cpi, ppi, rate].filter(Boolean);
-}
+const FAO_SUBINDEX_LABELS: { key: "fpi" | "meat" | "dairy" | "cereals" | "oils" | "sugar"; name: string; symbol: string }[] = [
+  { key: "fpi", name: "FAO 식품가격지수", symbol: "FFPI" },
+  { key: "meat", name: "FAO 육류가격지수", symbol: "FAO-Meat" },
+  { key: "dairy", name: "FAO 유제품가격지수", symbol: "FAO-Dairy" },
+  { key: "cereals", name: "FAO 곡물가격지수", symbol: "FAO-Cereals" },
+  { key: "oils", name: "FAO 식물성유지가격지수", symbol: "FAO-Oils" },
+  { key: "sugar", name: "FAO 설탕가격지수", symbol: "FAO-Sugar" },
+];
 
-// ── FAO 식품가격지수 ──────────────────────────────────
 export async function fetchFAOFoodPriceIndex() {
   try {
-    const res = await axios.get(
-      "https://fenixservices.fao.org/faostat/api/v1/data/FPPI?area=5000&item=23013&element=6132&year=2023,2024,2025&format=json",
-      { timeout: 15000 }
-    );
-    const rows = res.data?.data ?? [];
-    if (rows.length === 0) return [];
-    const sorted = rows.sort((a: any, b: any) => b.Year - a.Year || b.Months - a.Months);
-    return sorted.slice(0, 6).map((r: any) => ({
-      name: "FAO 식품가격지수",
-      symbol: "FFPI",
-      value: r.Value,
-      unit: "Index",
-      date: `${r.Year}-${String(r.Months).padStart(2, "0")}`,
-      source: "FAO",
-    }));
-  } catch (err) { logger.error({ err }, "FAO fetch error"); return []; }
+    const res = await axios.get(FAO_CSV_URL, {
+      timeout: 15000,
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; FoodNewsDashboard/1.0)" },
+      responseType: "text",
+    });
+    const csv: string = res.data;
+
+    // 데이터 행만 추출: "YYYY-MM,val,val,val,val,val,val,..." 형태
+    const lines = csv.split("\n").filter((line) => /^\d{4}-\d{2},/.test(line.trim()));
+    if (lines.length === 0) {
+      logger.warn("FAO CSV: no data rows matched");
+      return [];
+    }
+
+    const parseRow = (line: string) => {
+      const cols = line.split(",");
+      return {
+        date: cols[0],
+        fpi: parseFloat(cols[1]),
+        meat: parseFloat(cols[2]),
+        dairy: parseFloat(cols[3]),
+        cereals: parseFloat(cols[4]),
+        oils: parseFloat(cols[5]),
+        sugar: parseFloat(cols[6]),
+      };
+    };
+
+    const latest = parseRow(lines[lines.length - 1]);
+    const prev = lines.length >= 2 ? parseRow(lines[lines.length - 2]) : null;
+
+    return FAO_SUBINDEX_LABELS.map(({ key, name, symbol }) => {
+      const value = latest[key];
+      const prevValue = prev ? prev[key] : null;
+      const change = prevValue != null && !Number.isNaN(prevValue) ? value - prevValue : null;
+      const changePct = change != null && prevValue ? (change / prevValue) * 100 : null;
+      return {
+        name,
+        symbol,
+        value,
+        prevValue,
+        change,
+        changePct,
+        unit: "Index (2014-2016=100)",
+        date: latest.date,
+        source: "FAO",
+      };
+    }).filter((d) => !Number.isNaN(d.value));
+  } catch (err) {
+    logger.error({ err }, "FAO CSV fetch error");
+    return [];
+  }
 }
 
 // ── 전체 수집 ────────────────────────────────────────
 export async function fetchAllMarketData() {
-  const [oil, commodities, fx, macro, fao] = await Promise.all([
+  const [oil, commodities, ecos, fao] = await Promise.all([
     fetchOilPrices(),
     fetchCommodityPrices(),
-    fetchExchangeRates(),
-    fetchMacroIndicators(),
+    fetchECOSKeyStats(),
     fetchFAOFoodPriceIndex(),
   ]);
-  return { oil, commodities, fx, macro, fao, updatedAt: new Date().toISOString() };
+  return {
+    oil,
+    commodities,
+    fx: ecos.fx,
+    macro: ecos.macro,
+    fao,
+    updatedAt: new Date().toISOString(),
+  };
 }
